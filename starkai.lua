@@ -1,23 +1,31 @@
--- Kaitun Blox Fruits Full Auto v2025 - Delta Executor/Sea 1 Safe
--- Configura getgenv().SettingFarm por fuera, ejecuta este script como loadstring.
--- Selecciona automáticamente el equipo "Marines".
--- NO teletransporta si no es necesario (nivel bajo = sea 1).
--- NO tendrás que sustituir nada. Listo para cuentas nuevas y Delta executor.
+-- Kaitun Blox Fruits Full Auto v2025 - Selección robusta de equipo y teleport seguro
+-- 100% plug & play, sin sustituciones ni errores de teleport en cuenta nueva.
 
-repeat wait() until game:IsLoaded() and game.Players and game.Players.LocalPlayer and game.Players.LocalPlayer.Team
+repeat wait() until game:IsLoaded() and game.Players and game.Players.LocalPlayer
 
--- Selección automática de equipo "Marines"
-local chosenTeam = "Marines"
-local rem = game:GetService("ReplicatedStorage").Remotes["CommF_"]
-if game.Players.LocalPlayer.Team == nil or game.Players.LocalPlayer.Team.Name ~= chosenTeam then
-    rem:InvokeServer("SetTeam", chosenTeam)
-    wait(1)
-    while game.Players.LocalPlayer.Team == nil or game.Players.LocalPlayer.Team.Name ~= chosenTeam do
-        rem:InvokeServer("SetTeam", chosenTeam)
-        wait(1)
+-- Espera a que los remotes estén disponibles
+local function getRemote()
+    local rep = game:GetService("ReplicatedStorage")
+    local remotes = rep:FindFirstChild("Remotes")
+    while not remotes or not remotes:FindFirstChild("CommF_") do
+        wait(0.5)
+        remotes = rep:FindFirstChild("Remotes")
     end
+    return remotes:FindFirstChild("CommF_")
 end
 
+local chosenTeam = "Marines"
+local rem = getRemote()
+repeat
+    pcall(function()
+        if game.Players.LocalPlayer.Team == nil or game.Players.LocalPlayer.Team.Name ~= chosenTeam then
+            rem:InvokeServer("SetTeam", chosenTeam)
+        end
+    end)
+    wait(1)
+until game.Players.LocalPlayer.Team and game.Players.LocalPlayer.Team.Name == chosenTeam
+
+-- Protección para funciones exploit
 if not firetouchinterest then firetouchinterest = function(a,b,c) end end
 if not sethiddenproperty then sethiddenproperty = function(a,b,c) end end
 
@@ -42,8 +50,7 @@ local function safeTeleportToSea(sea)
     if game.PlaceId ~= seaPlace[sea] then
         if sea == 2 and game.Players.LocalPlayer.Data.Level.Value < 700 then return end
         if sea == 3 and game.Players.LocalPlayer.Data.Level.Value < 1500 then return end
-        local tries = 0
-        local success = false
+        local tries, success = 0, false
         repeat
             tries = tries + 1
             local ok = pcall(function()
@@ -80,7 +87,7 @@ local function autoFarmLevel()
         local mob, quest, sea = getNextMobQuest(getLevel())
         if sea == 2 and getLevel() >= 700 and game.PlaceId ~= 4442272183 then safeTeleportToSea(2) end
         if sea == 3 and getLevel() >= 1500 and game.PlaceId ~= 7449423635 then safeTeleportToSea(3) end
-        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", quest, 1)
+        rem:InvokeServer("StartQuest", quest, 1)
         for _,enemy in pairs(workspace.Enemies:GetChildren()) do
             if enemy.Name:find(mob) and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
                 repeat
@@ -130,7 +137,7 @@ local function getFragments() return game.Players.LocalPlayer.Data.Fragments.Val
 local function autoFarmFragmentsGodhuman()
     safeTeleportToSea(3)
     while getFragments() < 5000 do
-        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaidsNpc","Select","Flame")
+        rem:InvokeServer("RaidsNpc","Select","Flame")
         wait(15)
         for _,enemy in pairs(workspace.Enemies:GetChildren()) do
             if enemy:FindFirstChild("Humanoid") then
@@ -170,7 +177,7 @@ local function comprarGodhuman()
         local npc = workspace.NPCs:FindFirstChild("Ancient Monk")
         if npc then
             game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = npc.HumanoidRootPart.CFrame
-            game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyGodhuman",true)
+            rem:InvokeServer("BuyGodhuman",true)
         end
     end
 end
@@ -192,10 +199,10 @@ local function tieneFruta(fruit)
     return false
 end
 local function snipearFruta(fruit)
-    local shop = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruitsShop")
+    local shop = rem:InvokeServer("GetFruitsShop")
     for _,v in pairs(shop) do
         if v.Name:find(fruit) and v.Price <= getBeli() then
-            game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyFruits",v.Name)
+            rem:InvokeServer("BuyFruits",v.Name)
         end
     end
     for _,v in pairs(workspace:GetChildren()) do
