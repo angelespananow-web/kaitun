@@ -1,8 +1,8 @@
 -- Kaitun Blox Fruits FULL AUTO - Solo Level Max, God Human y 3 Frutas Míticas
--- Todo lo demás deshabilitado/modular por config externa.
--- Listo para usar con Delta, Synapse, ScriptWare, KRNL.
+-- Corre desde nivel 9 sin teletransportes ni checks avanzados.
+-- Modular por config externa.
 
--- CONFIG EXTERNA (ponla afuera del script o en tu executor)
+-- CONFIG EXTERNA (afuera del script):
 --[[
 getgenv().KaitunConfig = {
     ["AutoLevelMax"] = true,
@@ -51,23 +51,14 @@ if not sethiddenproperty then sethiddenproperty = function(a,b,c) end end
 -- ========== LEVEL MAX ==========
 
 local function getLevel() return game.Players.LocalPlayer.Data.Level.Value end
-local LevelTable = {
-    [1] = {mob="Bandit",quest="BanditQuest"},
-    [700] = {mob="Sea Soldier",quest="SeaSoldierQuest"},
-    [1500] = {mob="Zombie",quest="ZombieQuest"},
-    [2000] = {mob="Pirate",quest="PirateQuest"},
-}
-local function getNextMobQuest(lvl)
-    local pick
-    for k,v in pairs(LevelTable) do
-        if lvl >= k then pick = v end
-    end
-    return pick.mob, pick.quest
+local function getBanditQuest()
+    return "Bandit", "BanditQuest"
 end
+
 local function autoFarmLevel()
     local maxLevel = 2800
     while getLevel() < maxLevel do
-        local mob, quest = getNextMobQuest(getLevel())
+        local mob, quest = getBanditQuest()
         rem:InvokeServer("StartQuest", quest, 1)
         for _,enemy in pairs(workspace.Enemies:GetChildren()) do
             if enemy.Name:find(mob) and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
