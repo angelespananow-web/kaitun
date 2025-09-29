@@ -1,17 +1,36 @@
--- Kaitun Blox Fruits Full Auto v2025 - Selección robusta de equipo y teleport seguro
--- 100% plug & play, sin sustituciones ni errores de teleport en cuenta nueva.
+-- Kaitun Blox Fruits FULL AUTO - Solo Level Max, God Human y 3 Frutas Míticas
+-- Todo lo demás deshabilitado/modular por config externa.
+-- Listo para usar con Delta, Synapse, ScriptWare, KRNL.
+
+-- CONFIG EXTERNA (ponla afuera del script o en tu executor)
+--[[
+getgenv().KaitunConfig = {
+    ["AutoLevelMax"] = true,
+    ["GetGodhuman"] = true,
+    ["GetMythicFruits"] = true,
+    ["MythicFruitList"] = {"Leopard-Leopard", "Dragon-Dragon", "Kitsune-Kitsune"}
+}
+]]
+
+local cfg = getgenv().KaitunConfig or {
+    ["AutoLevelMax"] = true,
+    ["GetGodhuman"] = true,
+    ["GetMythicFruits"] = true,
+    ["MythicFruitList"] = {"Leopard-Leopard", "Dragon-Dragon", "Kitsune-Kitsune"}
+}
 
 repeat wait() until game:IsLoaded() and game.Players and game.Players.LocalPlayer
 
--- Espera a que los remotes estén disponibles
+-- Selección robusta de Marines
 local function getRemote()
     local rep = game:GetService("ReplicatedStorage")
-    local remotes = rep:FindFirstChild("Remotes")
-    while not remotes or not remotes:FindFirstChild("CommF_") do
+    local remote
+    repeat
+        local remotes = rep:FindFirstChild("Remotes")
+        if remotes then remote = remotes:FindFirstChild("CommF_") end
         wait(0.5)
-        remotes = rep:FindFirstChild("Remotes")
-    end
-    return remotes:FindFirstChild("CommF_")
+    until remote
+    return remote
 end
 
 local chosenTeam = "Marines"
@@ -29,64 +48,26 @@ until game.Players.LocalPlayer.Team and game.Players.LocalPlayer.Team.Name == ch
 if not firetouchinterest then firetouchinterest = function(a,b,c) end end
 if not sethiddenproperty then sethiddenproperty = function(a,b,c) end end
 
-local config = getgenv().SettingFarm or {
-    ["LockFps"] = {["Enabled"] = true, ["FPS"] = 15},
-    ["AutoLevelMax"] = true,
-    ["GetGodhuman"] = true,
-    ["GetMythicFruits"] = true,
-    ["MythicFruitList"] = {"Leopard-Leopard", "Dragon-Dragon", "Kitsune-Kitsune"},
-    ["AutoHopServer"] = true,
-    ["AutoWebhook"] = false,
-    ["WebhookUrl"] = "",
-}
-
-if config.LockFps and config.LockFps.Enabled and typeof(setfpscap) == "function" then
-    local fps = tonumber(config.LockFps.FPS) or 15
-    pcall(function() setfpscap(fps) end)
-end
-
-local function safeTeleportToSea(sea)
-    local seaPlace = {[1]=2753915549, [2]=4442272183, [3]=7449423635}
-    if game.PlaceId ~= seaPlace[sea] then
-        if sea == 2 and game.Players.LocalPlayer.Data.Level.Value < 700 then return end
-        if sea == 3 and game.Players.LocalPlayer.Data.Level.Value < 1500 then return end
-        local tries, success = 0, false
-        repeat
-            tries = tries + 1
-            local ok = pcall(function()
-                game:GetService("TeleportService"):Teleport(seaPlace[sea])
-            end)
-            wait(5)
-            success = (game.PlaceId == seaPlace[sea])
-        until success or tries > 5
-        if not success then
-            warn("No se pudo teletransportar al Sea "..tostring(sea)..". Reintentando en 20 segundos.")
-            wait(20)
-            safeTeleportToSea(sea)
-        end
-    end
-end
+-- ========== LEVEL MAX ==========
 
 local function getLevel() return game.Players.LocalPlayer.Data.Level.Value end
 local LevelTable = {
-    [1] = {mob="Bandit",quest="BanditQuest",sea=1},
-    [700] = {mob="Sea Soldier",quest="SeaSoldierQuest",sea=2},
-    [1500] = {mob="Zombie",quest="ZombieQuest",sea=2},
-    [2000] = {mob="Pirate",quest="PirateQuest",sea=3},
+    [1] = {mob="Bandit",quest="BanditQuest"},
+    [700] = {mob="Sea Soldier",quest="SeaSoldierQuest"},
+    [1500] = {mob="Zombie",quest="ZombieQuest"},
+    [2000] = {mob="Pirate",quest="PirateQuest"},
 }
 local function getNextMobQuest(lvl)
     local pick
     for k,v in pairs(LevelTable) do
         if lvl >= k then pick = v end
     end
-    return pick.mob, pick.quest, pick.sea
+    return pick.mob, pick.quest
 end
 local function autoFarmLevel()
     local maxLevel = 2800
     while getLevel() < maxLevel do
-        local mob, quest, sea = getNextMobQuest(getLevel())
-        if sea == 2 and getLevel() >= 700 and game.PlaceId ~= 4442272183 then safeTeleportToSea(2) end
-        if sea == 3 and getLevel() >= 1500 and game.PlaceId ~= 7449423635 then safeTeleportToSea(3) end
+        local mob, quest = getNextMobQuest(getLevel())
         rem:InvokeServer("StartQuest", quest, 1)
         for _,enemy in pairs(workspace.Enemies:GetChildren()) do
             if enemy.Name:find(mob) and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
@@ -101,11 +82,13 @@ local function autoFarmLevel()
     end
 end
 
+-- ========== GOD HUMAN ==========
+
 local materiales_gh = {
-    ["Fish Tail"] = {qty=20, mobs={"Fishman Warrior","Fishman Commando"},sea=1},
-    ["Magma Ore"] = {qty=20, mobs={"Military Spy","Military Soldier"},sea=1},
-    ["Mystic Droplet"] = {qty=10, mobs={"Sea Soldier","Water Fighter"},sea=2},
-    ["Dragon Scale"] = {qty=10, mobs={"Dragon Crew Archer","Dragon Crew Warrior"},sea=3},
+    ["Fish Tail"] = {qty=20, mobs={"Fishman Warrior","Fishman Commando"}},
+    ["Magma Ore"] = {qty=20, mobs={"Military Spy","Military Soldier"}},
+    ["Mystic Droplet"] = {qty=10, mobs={"Sea Soldier","Water Fighter"}},
+    ["Dragon Scale"] = {qty=10, mobs={"Dragon Crew Archer","Dragon Crew Warrior"}},
 }
 local estilos_gh = {"Superhuman", "Electric Claw", "Death Step", "Sharkman Karate", "Dragon Talon"}
 local function getMaterialCount(mat)
@@ -116,7 +99,6 @@ local function getMaterialCount(mat)
 end
 local function autoFarmMaterialsGodhuman()
     for mat,data in pairs(materiales_gh) do
-        safeTeleportToSea(data.sea)
         while getMaterialCount(mat) < data.qty do
             for _,enemy in pairs(workspace.Enemies:GetChildren()) do
                 for _,mob in pairs(data.mobs) do
@@ -135,7 +117,6 @@ local function autoFarmMaterialsGodhuman()
 end
 local function getFragments() return game.Players.LocalPlayer.Data.Fragments.Value end
 local function autoFarmFragmentsGodhuman()
-    safeTeleportToSea(3)
     while getFragments() < 5000 do
         rem:InvokeServer("RaidsNpc","Select","Flame")
         wait(15)
@@ -173,7 +154,6 @@ local function tieneGodhuman()
 end
 local function comprarGodhuman()
     if getBeli() >= 5000000 and getFragments() >= 5000 then
-        safeTeleportToSea(3)
         local npc = workspace.NPCs:FindFirstChild("Ancient Monk")
         if npc then
             game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = npc.HumanoidRootPart.CFrame
@@ -188,6 +168,8 @@ local function autoGodhuman()
     autoFarmMasteryGodhuman()
     comprarGodhuman()
 end
+
+-- ========== FRUTAS MITICAS (x3) ==========
 
 local function tieneFruta(fruit)
     for _,v in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
@@ -214,7 +196,8 @@ local function snipearFruta(fruit)
     end
 end
 local function autoMythicFruits()
-    for _,fruit in ipairs(config["MythicFruitList"]) do
+    local list = cfg["MythicFruitList"] or {"Leopard-Leopard","Dragon-Dragon","Kitsune-Kitsune"}
+    for _,fruit in ipairs(list) do
         while not tieneFruta(fruit) do
             snipearFruta(fruit)
             wait(1)
@@ -222,33 +205,7 @@ local function autoMythicFruits()
     end
 end
 
-local function autoHopIfNeeded()
-    if config.AutoHopServer then
-        local players = #game.Players:GetPlayers()
-        if players > 5 then
-            local servers = game.HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/7449423635/servers/Public?sortOrder=Asc&limit=100")).data
-            for _,srv in pairs(servers) do
-                if srv.playing < 5 then
-                    game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId,srv.id,game.Players.LocalPlayer)
-                    break
-                end
-            end
-        end
-    end
-end
-
-local function enviarWebhook(msg)
-    if config.AutoWebhook and config.WebhookUrl ~= "" then
-        local http = game:GetService("HttpService")
-        http:PostAsync(config.WebhookUrl,http:JSONEncode({content=msg}))
-    end
-end
-
-local function main()
-    autoHopIfNeeded()
-    if config.AutoLevelMax then autoFarmLevel() end
-    if config.GetGodhuman then autoGodhuman() end
-    if config.GetMythicFruits then autoMythicFruits() end
-end
-
-main()
+-- ========== MAIN ==========
+if cfg["AutoLevelMax"] then autoFarmLevel() end
+if cfg["GetGodhuman"] then autoGodhuman() end
+if cfg["GetMythicFruits"] then autoMythicFruits() end
