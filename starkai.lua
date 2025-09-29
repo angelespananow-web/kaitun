@@ -1,11 +1,12 @@
--- Kaitun Blox Fruits Full Auto v2025 - Delta Executor Compatible
+-- Kaitun Blox Fruits Full Auto v2025 - Delta Executor/Sea 1 Safe
 -- Configura getgenv().SettingFarm por fuera, ejecuta este script como loadstring.
 -- Selecciona automáticamente el equipo "Marines".
--- Compatible con Delta (usa firetouchinterest, sethiddenproperty, etc. si están disponibles).
+-- NO teletransporta si no es necesario (nivel bajo = sea 1).
+-- NO tendrás que sustituir nada. Listo para cuentas nuevas y Delta executor.
 
-repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
+repeat wait() until game:IsLoaded() and game.Players and game.Players.LocalPlayer and game.Players.LocalPlayer.Team
 
--- Selección automática de equipo "Marines" (antes de cualquier lógica)
+-- Selección automática de equipo "Marines"
 local chosenTeam = "Marines"
 local rem = game:GetService("ReplicatedStorage").Remotes["CommF_"]
 if game.Players.LocalPlayer.Team == nil or game.Players.LocalPlayer.Team.Name ~= chosenTeam then
@@ -17,12 +18,8 @@ if game.Players.LocalPlayer.Team == nil or game.Players.LocalPlayer.Team.Name ~=
     end
 end
 
--- Protección para funciones (compatibilidad Delta/otros)
 if not firetouchinterest then firetouchinterest = function(a,b,c) end end
 if not sethiddenproperty then sethiddenproperty = function(a,b,c) end end
-if not hookfunction then hookfunction = function(a,b) return a end end
-if not islclosure then islclosure = function(a) return false end end
-if not require then require = function(a) return {} end end
 
 local config = getgenv().SettingFarm or {
     ["LockFps"] = {["Enabled"] = true, ["FPS"] = 15},
@@ -35,13 +32,34 @@ local config = getgenv().SettingFarm or {
     ["WebhookUrl"] = "",
 }
 
--- FPS CAP (Delta soporta setfpscap)
 if config.LockFps and config.LockFps.Enabled and typeof(setfpscap) == "function" then
     local fps = tonumber(config.LockFps.FPS) or 15
     pcall(function() setfpscap(fps) end)
 end
 
--- AUTO LEVEL MAX (farmear hasta 2800 con cambio de sea)
+local function safeTeleportToSea(sea)
+    local seaPlace = {[1]=2753915549, [2]=4442272183, [3]=7449423635}
+    if game.PlaceId ~= seaPlace[sea] then
+        if sea == 2 and game.Players.LocalPlayer.Data.Level.Value < 700 then return end
+        if sea == 3 and game.Players.LocalPlayer.Data.Level.Value < 1500 then return end
+        local tries = 0
+        local success = false
+        repeat
+            tries = tries + 1
+            local ok = pcall(function()
+                game:GetService("TeleportService"):Teleport(seaPlace[sea])
+            end)
+            wait(5)
+            success = (game.PlaceId == seaPlace[sea])
+        until success or tries > 5
+        if not success then
+            warn("No se pudo teletransportar al Sea "..tostring(sea)..". Reintentando en 20 segundos.")
+            wait(20)
+            safeTeleportToSea(sea)
+        end
+    end
+end
+
 local function getLevel() return game.Players.LocalPlayer.Data.Level.Value end
 local LevelTable = {
     [1] = {mob="Bandit",quest="BanditQuest",sea=1},
@@ -56,18 +74,12 @@ local function getNextMobQuest(lvl)
     end
     return pick.mob, pick.quest, pick.sea
 end
-local function teleportToSea(sea)
-    local seaPlace = {[1]=2753915549,[2]=4442272183,[3]=7449423635}
-    if game.PlaceId ~= seaPlace[sea] then
-        game:GetService("TeleportService"):Teleport(seaPlace[sea])
-        repeat wait() until game.PlaceId == seaPlace[sea]
-    end
-end
 local function autoFarmLevel()
     local maxLevel = 2800
     while getLevel() < maxLevel do
         local mob, quest, sea = getNextMobQuest(getLevel())
-        teleportToSea(sea)
+        if sea == 2 and getLevel() >= 700 and game.PlaceId ~= 4442272183 then safeTeleportToSea(2) end
+        if sea == 3 and getLevel() >= 1500 and game.PlaceId ~= 7449423635 then safeTeleportToSea(3) end
         game.ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", quest, 1)
         for _,enemy in pairs(workspace.Enemies:GetChildren()) do
             if enemy.Name:find(mob) and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
@@ -82,7 +94,6 @@ local function autoFarmLevel()
     end
 end
 
--- AUTO GOD HUMAN FULL
 local materiales_gh = {
     ["Fish Tail"] = {qty=20, mobs={"Fishman Warrior","Fishman Commando"},sea=1},
     ["Magma Ore"] = {qty=20, mobs={"Military Spy","Military Soldier"},sea=1},
@@ -98,7 +109,7 @@ local function getMaterialCount(mat)
 end
 local function autoFarmMaterialsGodhuman()
     for mat,data in pairs(materiales_gh) do
-        teleportToSea(data.sea)
+        safeTeleportToSea(data.sea)
         while getMaterialCount(mat) < data.qty do
             for _,enemy in pairs(workspace.Enemies:GetChildren()) do
                 for _,mob in pairs(data.mobs) do
@@ -117,7 +128,7 @@ local function autoFarmMaterialsGodhuman()
 end
 local function getFragments() return game.Players.LocalPlayer.Data.Fragments.Value end
 local function autoFarmFragmentsGodhuman()
-    teleportToSea(3)
+    safeTeleportToSea(3)
     while getFragments() < 5000 do
         game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaidsNpc","Select","Flame")
         wait(15)
@@ -155,7 +166,7 @@ local function tieneGodhuman()
 end
 local function comprarGodhuman()
     if getBeli() >= 5000000 and getFragments() >= 5000 then
-        teleportToSea(3)
+        safeTeleportToSea(3)
         local npc = workspace.NPCs:FindFirstChild("Ancient Monk")
         if npc then
             game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = npc.HumanoidRootPart.CFrame
@@ -171,7 +182,6 @@ local function autoGodhuman()
     comprarGodhuman()
 end
 
--- AUTO FRUTAS MÍTICAS FULL/CONFIGURABLE
 local function tieneFruta(fruit)
     for _,v in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
         if v.Name:find(fruit) then return true end
@@ -205,7 +215,6 @@ local function autoMythicFruits()
     end
 end
 
--- AUTO HOP SERVER (Delta soporta TeleportService)
 local function autoHopIfNeeded()
     if config.AutoHopServer then
         local players = #game.Players:GetPlayers()
@@ -221,7 +230,6 @@ local function autoHopIfNeeded()
     end
 end
 
--- AUTO WEBHOOK (Delta soporta HttpService)
 local function enviarWebhook(msg)
     if config.AutoWebhook and config.WebhookUrl ~= "" then
         local http = game:GetService("HttpService")
@@ -229,21 +237,11 @@ local function enviarWebhook(msg)
     end
 end
 
--- MAIN
 local function main()
     autoHopIfNeeded()
-    if config.AutoLevelMax then
-        autoFarmLevel()
-        enviarWebhook("Nivel máximo alcanzado: "..getLevel())
-    end
-    if config.GetGodhuman then
-        autoGodhuman()
-        enviarWebhook("Godhuman conseguido.")
-    end
-    if config.GetMythicFruits then
-        autoMythicFruits()
-        enviarWebhook("Frutas míticas conseguidas.")
-    end
+    if config.AutoLevelMax then autoFarmLevel() end
+    if config.GetGodhuman then autoGodhuman() end
+    if config.GetMythicFruits then autoMythicFruits() end
 end
 
 main()
